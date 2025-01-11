@@ -1,21 +1,24 @@
 const express = require("express");
 const puppeteer = require("puppeteer");
 const path = require("path");
-const fs = require("fs");
 const { v4: uuidv4 } = require("uuid");
+const fs = require("fs");
 
 const app = express();
-const port = process.env.PORT || 3000; // Railway використовує PORT змінну
+const port = 3000;
 
+// Directory for storing screenshots
 const imagesDir = path.join(__dirname, "images");
 if (!fs.existsSync(imagesDir)) {
   fs.mkdirSync(imagesDir);
 }
 
-app.use(express.static("public"));
+// Serving static files from the 'public' directory
+app.use(express.static(path.join(__dirname, "public")));
 app.use("/images", express.static(imagesDir));
 app.use(express.json());
 
+// Endpoint for generating a screenshot
 app.post("/api/screenshot", async (req, res) => {
   const { url, width, height, format, quality, fullPage } = req.body;
 
@@ -24,11 +27,10 @@ app.post("/api/screenshot", async (req, res) => {
   }
 
   try {
-    const browser = await puppeteer.launch({
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    const browser = await puppeteer.launch();
     const page = await browser.newPage();
 
+    // Configuring viewport
     await page.setViewport({
       width: parseInt(width, 10) || 1920,
       height: parseInt(height, 10) || 1080,
@@ -36,11 +38,13 @@ app.post("/api/screenshot", async (req, res) => {
 
     await page.goto(url, { waitUntil: "networkidle2" });
 
+    // Generate a unique filename for the screenshot
     const screenshotPath = path.join(
       imagesDir,
       `screenshot_${uuidv4()}.${format || "png"}`
     );
 
+    // Capture screenshot with user-defined settings
     await page.screenshot({
       path: screenshotPath,
       type: format.toLowerCase() || "png",
@@ -53,8 +57,9 @@ app.post("/api/screenshot", async (req, res) => {
 
     await browser.close();
 
+    // Sending response with the screenshot URL
     res.json({
-      message: "Screenshot successfully created!",
+      message: "Screenshot created successfully.",
       url: `/images/${path.basename(screenshotPath)}`,
     });
   } catch (error) {
@@ -63,6 +68,7 @@ app.post("/api/screenshot", async (req, res) => {
   }
 });
 
+// Start the server
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
 });
