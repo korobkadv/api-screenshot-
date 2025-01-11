@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Screenshot API</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <style>
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            display: none;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 flex items-center justify-center h-screen">
+    <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-lg">
+        <h1 class="text-3xl font-bold text-center mb-6">Screenshot API</h1>
+
+        <form id="screenshotForm" class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">URL</label>
+                <input type="url" id="url" required class="mt-1 block w-full border-2 border-blue-500 rounded-md p-2">
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Width (px)</label>
+                    <input type="number" id="width" value="1920"
+                        class="mt-1 block w-full border-gray-300 rounded-md p-2">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Height (px)</label>
+                    <input type="number" id="height" value="1080"
+                        class="mt-1 block w-full border-gray-300 rounded-md p-2">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Format</label>
+                <select id="format" class="mt-1 block w-full border-gray-300 rounded-md p-2">
+                    <option value="png">PNG</option>
+                    <option value="jpeg">JPEG</option>
+                    <option value="webp">WebP</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Quality (for JPEG/WebP)</label>
+                <input type="number" id="quality" value="100" min="1" max="100"
+                    class="mt-1 block w-full border-gray-300 rounded-md p-2">
+            </div>
+            <div>
+                <label class="inline-flex items-center">
+                    <input type="checkbox" id="fullPage" class="rounded border-gray-300 text-blue-500">
+                    <span class="ml-2">Capture Full Page</span>
+                </label>
+            </div>
+            <div class="flex justify-center">
+                <div class="loader" id="loader"></div>
+            </div>
+            <button type="submit" class="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600">
+                Generate Screenshot
+            </button>
+        </form>
+
+        <div id="result" class="mt-6 text-center"></div>
+    </div>
+
+    <script>
+        document.getElementById('screenshotForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const form = e.target;
+            const resultDiv = document.getElementById('result');
+            const loader = document.getElementById('loader');
+            loader.style.display = 'block';
+            resultDiv.innerHTML = '';
+
+            const url = document.getElementById('url').value;
+            const width = document.getElementById('width').value;
+            const height = document.getElementById('height').value;
+            const format = document.getElementById('format').value;
+            const quality = document.getElementById('quality').value;
+            const fullPage = document.getElementById('fullPage').checked;
+
+            try {
+                const response = await fetch('/api/screenshot', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ url, width, height, format, quality, fullPage })
+                });
+
+                if (!response.ok) throw new Error('Screenshot generation failed');
+                const data = await response.json();
+
+                resultDiv.innerHTML = `<p class="text-green-500 font-bold">Screenshot successfully created!</p>
+                    <a href="${data.url}" target="_blank" class="block text-blue-500 underline mt-2">Download Screenshot</a>`;
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="text-red-500 font-bold">${error.message}</p>`;
+            } finally {
+                loader.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+
+</html>
